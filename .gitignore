@@ -1,0 +1,11 @@
+*.py[cod]
+test.py[cod]
+.pypirc
+build
+dist
+*.egg-info
+build.sh
+
+# Eclipse
+.project
+.settings
