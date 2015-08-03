@@ -1,8 +1,14 @@
+from __future__ import division
+from time import tzname, time
+from datetime import datetime
 from os import makedirs, remove, kill
-from os.path import dirname, isfile, isdir
+from os.path import dirname, isfile, isdir, getmtime
 
 # Lense Libraries
 from .common import _LSBCommon
+
+# Weekday mapping
+WEEKDAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 class _LSBPIDHandler(_LSBCommon):
     """
@@ -14,6 +20,56 @@ class _LSBPIDHandler(_LSBCommon):
         # PID file / directory
         self.pid_file = pid_file
         self.pid_dir  = dirname(pid_file)
+        
+    def created(self):
+        """
+        Get the creation date for the PID file.
+        """
+        return getmtime(self.pid_file)
+        
+    def age(self):
+        """
+        Get the age of the PID file.
+        """
+        
+        # Created timestamp
+        created = self.created()
+        
+        # Age in seconds / minutes / hours / days
+        age_secs  = time() - created
+        age_mins  = 0 if (age_secs < 60) else (age_secs / 60)
+        age_hours = 0 if (age_secs < 3600) else (age_mins / 60)
+        age_days  = 0 if (age_secs < 86400) else (age_hours / 24)
+        
+        # Return the age tuple
+        return (
+            int(age_secs), 
+            int(age_mins), 
+            int(age_hours), 
+            int(age_days)
+        )
+        
+    def birthday(self):
+        """
+        Return a string representing the age of the process.
+        """
+        if isfile(self.pid_file):
+            
+            # Timestamp / timezone string
+            tstamp  = datetime.fromtimestamp(self.created())
+            tzone   = tzname[0] 
+            weekday = WEEKDAY[tstamp.isoweekday()]
+            
+            # PID file age / age string
+            age     = self.age()
+            age_str = '{}s ago'.format(age[0]) 
+            
+            # Birthday string
+            bday   = '{} {} {}; {}'.format(weekday, tstamp, tzone, age_str)
+            
+            # Return timestamp / timestamp string
+            return (self.created(), bday)
+        return (None, None)
         
     def get(self):
         """

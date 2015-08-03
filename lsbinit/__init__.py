@@ -1,3 +1,4 @@
+from __future__ import print_function
 from sys import argv, exit
 from subprocess import Popen
 from os import kill, devnull, makedirs
@@ -11,9 +12,18 @@ from .lock import _LSBLockHandler
 # Module version
 __version__ = '0.1-2'
 
+# Unicode characters
+UNICODE = {
+    'dot': u'\u2022'
+}
+
 class LSBInit(_LSBCommon):
-    def __init__(self, name, pid, lock, exe, output=None):
+    def __init__(self, name, pid, lock, exe, output=None, desc=''):
         super(LSBInit, self).__init__()
+        
+        # Service name / description
+        self.name      = name
+        self.desc      = desc
         
         # Lock / PID handler
         self.lock      = _LSBLockHandler(lock)
@@ -25,6 +35,27 @@ class LSBInit(_LSBCommon):
 
         # Command output
         self.output    = output
+
+    def _colorize(self, msg, color=None, encode=False):
+        """
+        Colorize a string.
+        """
+        
+        # Valid colors
+        colors = {
+            'red':    '31',
+            'green':  '32',
+            'yellow': '33'
+        }
+        
+        # No color specified or unsupported color
+        if not color or not color in colors:
+            return msg
+        
+        # The colorized string
+        if encode:
+            return u'\x1b[1;{}m{}\x1b[0m'.format(colors[color], msg)
+        return '\x1b[1;{}m{}\x1b[0m'.format(colors[color], msg)
             
     def is_running(self):
         """
@@ -99,9 +130,24 @@ class LSBInit(_LSBCommon):
         """
         Get the status of the service.
         """
+        
+        # Get the PID of the service
         pid    = self.pid.get()
-        status = 'running [PID {}]'.format(pid) if pid else 'stopped'
-        self.write_stdout('Service is {}...'.format(status))
+        
+        # Status color / attributes
+        status_color  = 'green' if pid else 'red'
+        status_dot    = self._colorize(UNICODE['dot'], status_color, encode=True)
+        
+        # Active text
+        active_txt    = {
+            'active':   '{} since {}'.format(self._colorize('active (running)'), self.pid.birtday()[1]),
+            'inactive': 'inactive (dead)'
+        }
+        
+        # Print the status message
+        print('{} {}.service - LSB: {}'.format(status_dot, self.name, self.desc))
+        print('   Loaded: loaded (/etc/init.d/{})'.format(self.name))
+        print('   Active: {}'.format(active_txt['active' if pid else 'inactive']))
             
     def do_systemd_start(self):
         self.do_start()
