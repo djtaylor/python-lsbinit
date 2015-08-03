@@ -1,8 +1,10 @@
 from __future__ import division
+import re
 from time import tzname, time
 from datetime import datetime
 from os import makedirs, remove, kill
 from os.path import dirname, isfile, isdir, getmtime
+from subprocess import Popen, PIPE
 
 # Lense Libraries
 from .common import _LSBCommon
@@ -20,6 +22,33 @@ class _LSBPIDHandler(_LSBCommon):
         # PID file / directory
         self.pid_file = pid_file
         self.pid_dir  = dirname(pid_file)
+        
+    def ps(self):
+        """
+        Get the process information from the system PS command.
+        """
+        
+        # Get the process ID
+        pid = self.get()
+        
+        # Parent / child processes
+        parent   = None
+        children = []
+        
+        # If the process is running
+        if pid:
+            proc = Popen(['ps', '-ef'], stdout=PIPE)
+            for l in proc.stdout.readlines():
+                this_pid    = re.compile(r'^[^ ]*[ ]*([\d]+).*$').sub(r'\g<1>', l)
+                this_parent = re.compile(r'^[^ ]*[ ]*[\d]+[ ]+([\d]+).*$').sub(r'\g<1>', l)
+                try:
+                    if int(pid) == int(this_parent):
+                        children.append('{}; [{}]'.format(this_pid.rstrip(), re.sub(' +', ' ', l.rstrip())))
+                    if int(pid) == int(this_pid):
+                        parent = re.sub(' +', ' ', l.rstrip())
+                except ValueError:
+                    continue
+        return (parent, children)
         
     def created(self):
         """
@@ -79,7 +108,7 @@ class _LSBPIDHandler(_LSBCommon):
             return open(self.pid_file, 'r').read()
         return None
 
-    def make(self):
+    def make(self, pnum):
         """
         Make a PID file and populate with PID number.
         """
@@ -90,7 +119,8 @@ class _LSBPIDHandler(_LSBCommon):
                 makedirs(self.pid_dir, 0755)
                 
             # Create the PID file
-            pid_file = open(self.pid_file, 'w').write(self.get())
+            pid_file = open(self.pid_file, 'w')
+            pid_file.write(pnum)
             pid_file.close()
         except Exception as e:
             self.die('Failed to generate PID file: {}'.format(str(e)))
@@ -112,7 +142,7 @@ class _LSBPIDHandler(_LSBCommon):
         Kill the running process and remove the PID/lock file.
         """
         try:
-            kill(self.get(), 9)
+            kill(int(self.get()), 9)
             
         # Failed to kill the process
         except Exception as e:

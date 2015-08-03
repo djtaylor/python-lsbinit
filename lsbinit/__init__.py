@@ -1,7 +1,7 @@
 from __future__ import print_function
 from sys import argv, exit
 from subprocess import Popen
-from os import kill, devnull, makedirs
+from os import kill, devnull, makedirs, setpgrp
 from os.path import dirname, isdir
 
 # Lense Libraries
@@ -10,7 +10,7 @@ from .pid import _LSBPIDHandler
 from .lock import _LSBLockHandler
 
 # Module version
-__version__ = '0.1-2'
+__version__ = '0.1-3'
 
 # Unicode characters
 UNICODE = {
@@ -62,12 +62,14 @@ class LSBInit(_LSBCommon):
         Check if the service is running.
         """
         try:
-            kill(self.pid.get(), 0)
+            kill(int(self.pid.get()), 0)
+            return True
         
         # Process not running, remove PID/lock file if it exists
         except:
             self.pid.remove()
             self.lock.remove()
+            return False
             
     def set_output(self):
         """
@@ -79,13 +81,13 @@ class LSBInit(_LSBCommon):
         # Get the output file path
         output_dir = dirname(self.output)
         
-        # Make the path if it doesn't exist
+        # Make the path exists
         if not isdir(output_dir):
             try:
                 makedirs(output_dir)
-                return self.output
             except Exception as e:
                 self.die('Failed to create output directory "{}": {}'.format(output_dir, str(e)))
+        return open(self.output, 'a')
             
     def do_start(self):
         if not self.is_running():
@@ -96,11 +98,11 @@ class LSBInit(_LSBCommon):
                 cmd  = ['nohup', self.exe] if isinstance(self.exe, str) else ['nohup'] + self.exe
             
                 # Start the process and get the PID number
-                proc = Popen(command, shell=False, stdout=output, stderr=output)
+                proc = Popen(cmd, shell=False, stdout=output, stderr=output)
                 pnum = str(proc.pid)
                 
                 # Generate the PID and lock files
-                self.pid.make()
+                self.pid.make(pnum)
                 self.lock.make()
                 self.write_stdout('Service is running [PID {}]...'.format(pnum))
                 
@@ -140,17 +142,31 @@ class LSBInit(_LSBCommon):
         
         # Active text
         active_txt    = {
-            'active':   '{} since {}'.format(self._colorize('active (running)'), self.pid.birtday()[1]),
+            'active':   '{} since {}'.format(self._colorize('active (running)', 'green'), self.pid.birthday()[1]),
             'inactive': 'inactive (dead)'
         }
         
         # Print the status message
-        print('{} {}.service - LSB: {}'.format(status_dot, self.name, self.desc))
+        print(status_dot, end=' ')
+        print('{}.service - LSB: {}'.format(self.name, self.desc))
         print('   Loaded: loaded (/etc/init.d/{})'.format(self.name))
         print('   Active: {}'.format(active_txt['active' if pid else 'inactive']))
+        
+        # Extra information if running
+        if pid:
+            ps = self.pid.ps()
+            print('  Process: {}; [{}]'.format(pid, ps[0]))
+            if ps[1]:
+                for c in ps[1]:
+                    print('    Child: {}'.format(c))
+        print('')
             
-    def do_systemd_start(self):
-        self.do_start()
+    def do_reload(self):
+        """
+        There needs to be a customizable way for the developer to implement
+        their own reload method depending on the needs of the application.
+        """
+        self.do_restart()
     
     def do_restart(self):
         self.do_stop()
@@ -166,14 +182,13 @@ class LSBInit(_LSBCommon):
             'start': self.do_start,
             'stop': self.do_stop,
             'status': self.do_status,
-            'systemd-start': self.do_systemd_start,
             'restart': self.do_restart,
-            'force-reload': self.do_restart    
+            'reload': self.do_restart    
         }
         
         # Process the control argument
         try:
             controls[self.command]()
         except KeyError:
-            self.write_stdout('Usage: {} {{start|stop|status|restart|force-reload|systemd-start}}'.format(self.name), 3)
+            self.write_stdout('Usage: {} {{start|stop|status|restart|reload}}'.format(self.name), 3)
         exit(0)
