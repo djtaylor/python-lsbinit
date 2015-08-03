@@ -2,6 +2,11 @@
 
 A pure Python module used to handle system init scripts.
 
+### Installation
+```sh
+$ pip install lsbinit
+```
+
 ### Basic Usage
 ```python
 #!/usr/bin/python
