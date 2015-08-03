@@ -1,0 +1,10 @@
+Package: python-lsbinit
+Version: 0.1-4
+Architecture: all
+Essential: no
+Section: python
+Priority: optional
+Depends: python (>=2.7)
+Maintainer: David Taylor <djtaylor13@gmail.com>
+Description: A pure Python module used to handle system init scripts.
+Homepage: https://github.com/djtaylor/python-lsbinit

@@ -1,9 +1,15 @@
 #!/usr/bin/python
-import lsbinit
+import sys
 from setuptools import setup, find_packages
 
+# Add the local path
+sys.path.append('src/usr/local/lib/python2.7/dist-packages')
+
+# Get the module version
+from lsbinit import __version__
+
 # Module version / long description
-version = lsbinit.__version__
+version = __version__
 long_desc = open('DESCRIPTION.rst').read()
 
 # Run the setup
@@ -11,6 +17,7 @@ setup(
     name='lsbinit',
     version=version,
     description='Linux init scripts handler',
+    package_dir={'': 'src/usr/local/lib/python2.7/dist-packages'},
     long_description=long_desc,
     author='David Taylor',
     author_email='djtaylor13@gmail.com',
