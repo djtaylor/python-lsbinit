@@ -10,7 +10,7 @@ from .pid import _LSBPIDHandler
 from .lock import _LSBLockHandler
 
 # Module version
-__version__ = '0.1-4'
+__version__ = '0.1-5'
 
 # Unicode characters
 UNICODE = {
