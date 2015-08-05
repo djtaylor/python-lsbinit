@@ -1,7 +1,7 @@
 from __future__ import print_function
 from sys import argv, exit
 from subprocess import Popen
-from os import kill, devnull, makedirs, setpgrp
+from os import kill, devnull, makedirs, setpgrp, environ
 from os.path import dirname, isdir
 
 # Lense Libraries
@@ -17,8 +17,17 @@ UNICODE = {
     'dot': u'\u2022'
 }
 
+def set_environ(inherit=True, append={}):
+    """
+    Helper method for passing environment variables to the subprocess.
+    """
+    _environ = {} if not inherit else environ
+    for k,v in append.iteritems():
+        _environ[k] = v
+    return _environ 
+
 class LSBInit(_LSBCommon):
-    def __init__(self, name, pid, lock, exe, output=None, desc=''):
+    def __init__(self, name, pid, lock, exe, output=None, desc='', env=None, shell=False):
         super(LSBInit, self).__init__()
         
         # Service name / description
@@ -29,9 +38,11 @@ class LSBInit(_LSBCommon):
         self.lock      = _LSBLockHandler(lock)
         self.pid       = _LSBPIDHandler(pid)
         
-        # Service command / executable
+        # Service command / executable / environment / shell
         self.command   = argv[1]
         self.exe       = exe
+        self.env       = env
+        self.shell     = shell
 
         # Command output
         self.output    = output
@@ -95,10 +106,15 @@ class LSBInit(_LSBCommon):
                 output = self.set_output()
         
                 # Generate the run command
-                cmd  = ['nohup', self.exe] if isinstance(self.exe, str) else ['nohup'] + self.exe
+                command = ['nohup', self.exe] if isinstance(self.exe, str) else ['nohup'] + self.exe
             
-                # Start the process and get the PID number
-                proc = Popen(cmd, shell=False, stdout=output, stderr=output)
+                # Start the process
+                proc = Popen(command,  
+                    stdout = output, 
+                    stderr = output, 
+                    shell  = self.shell,
+                    env    = self.env
+                )
                 pnum = str(proc.pid)
                 
                 # Generate the PID and lock files

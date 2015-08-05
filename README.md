@@ -10,7 +10,7 @@ $ pip install lsbinit
 ### Basic Usage
 ```python
 #!/usr/bin/python
-from lsbinit import LSBInit
+from lsbinit import LSBInit, set_environ
 
 ### BEGIN INIT INFO
 # Provides:          service-name
@@ -32,7 +32,10 @@ if __name__ == '__main__':
 		pid    = '/var/run/service-name.pid',
 		lock   = '/var/lock/service-name',
 		exe    = ['/usr/bin/service-name'],
-		output = '/var/log/service-name/output.log'
+		output = '/var/log/service-name/output.log',
+		env    = set_environ(append{
+			'HOME': '/home/user'
+		})
 	)
 	
 	# Launch the service handler
