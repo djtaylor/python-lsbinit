@@ -1,4 +1,5 @@
 from __future__ import division
+from __future__ import unicode_literals
 import re
 from time import tzname, time
 from datetime import datetime
@@ -21,7 +22,23 @@ class _LSBPIDHandler(_LSBCommon):
         
         # PID file / directory
         self.pid_file = pid_file
-        self.pid_dir  = dirname(pid_file)
+        self.pid_dir  = self.mkdir(dirname(pid_file))
+        
+        # Regexes
+        self.regex = {
+            'pid': re.compile(r'^[^ ]*[ ]*([\d]+).*$'),
+            'parent': re.compile(r'^[^ ]*[ ]*[\d]+[ ]+([\d]+).*$')
+        }
+        
+    def _ps_extract_pid(self, line):
+        """
+        Extract PID and parent PID from an output line from the PS command
+        """
+        this_pid = self.regex['pid'].sub(r'\g<1>', line)
+        this_parent = self.regex['parent'].sub(r'\g<1>', line)
+        
+        # Return the main / parent PIDs
+        return this_pid, this_parent
         
     def ps(self):
         """
@@ -37,17 +54,27 @@ class _LSBPIDHandler(_LSBCommon):
         
         # If the process is running
         if pid:
-            proc = Popen(['ps', '-ef'], stdout=PIPE)
-            for l in proc.stdout.readlines():
-                this_pid    = re.compile(r'^[^ ]*[ ]*([\d]+).*$').sub(r'\g<1>', l)
-                this_parent = re.compile(r'^[^ ]*[ ]*[\d]+[ ]+([\d]+).*$').sub(r'\g<1>', l)
+            proc   = Popen(['ps', '-ef'], stdout=PIPE)
+            for _line in proc.stdout.readlines():
+                line = self.unicode(_line.rstrip())
+                
+                # Get the current PID / parent PID
+                this_pid, this_parent = self._ps_extract_pid(line)
                 try:
+                    
+                    # If scanning a child process
                     if int(pid) == int(this_parent):
-                        children.append('{}; [{}]'.format(this_pid.rstrip(), re.sub(' +', ' ', l.rstrip())))
+                        children.append('{}; [{}]'.format(this_pid.rstrip(), re.sub(' +', ' ', line)))
+                    
+                    # If scanning the parent process
                     if int(pid) == int(this_pid):
-                        parent = re.sub(' +', ' ', l.rstrip())
+                        parent = re.sub(' +', ' ', line)
+                        
+                # Ignore value errors
                 except ValueError:
                     continue
+                
+        # Return the parent PID and any children processes
         return (parent, children)
         
     def created(self):
@@ -113,15 +140,9 @@ class _LSBPIDHandler(_LSBCommon):
         Make a PID file and populate with PID number.
         """
         try:
-        
-            # Make sure the PID directory exists
-            if not isdir(self.pid_dir):
-                makedirs(self.pid_dir, 0755)
                 
             # Create the PID file
-            pid_file = open(self.pid_file, 'w')
-            pid_file.write(pnum)
-            pid_file.close()
+            self.mkfile(self.pid_file, pnum)
         except Exception as e:
             self.die('Failed to generate PID file: {}'.format(str(e)))
     

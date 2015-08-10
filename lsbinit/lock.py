@@ -13,7 +13,7 @@ class _LSBLockHandler(_LSBCommon):
         
         # Lock file / directory
         self.lock_file = lock_file
-        self.lock_dir  = dirname(lock_file)
+        self.lock_dir  = self.mkdir(dirname(lock_file))
 
     def exists(self):
         """
@@ -38,12 +38,8 @@ class _LSBLockHandler(_LSBCommon):
         Make the lock file.
         """
         try:
-        
-            # Make sure the PID directory exists
-            if not isdir(self.lock_dir):
-                makedirs(self.lock_dir, 0755)
                 
             # Create the lock file
-            open(self.lock_file, 'w').close()
+            self.mkfile(self.lock_file)
         except Exception as e:
             self.die('Failed to generate lock file: {}'.format(str(e)))

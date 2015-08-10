@@ -1,10 +1,26 @@
 # LSB Init Manager
-
 A pure Python module used to handle system init scripts.
-
-### Installation
+### Installation (APT)
+Add the following sources to your apt sources configuration file:
+```
+deb http://ppa.launchpad.net/djtaylor13/main/ubuntu trusty main 
+deb-src http://ppa.launchpad.net/djtaylor13/main/ubuntu trusty main
+```
+Next import the public key, update software sources, and install:
 ```sh
-$ pip install lsbinit
+$ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys D4409661DAA6AF94
+$ sudo apt-get update
+# Python 2
+$ sudo apt-get install python-lsbinit
+# Python 3
+$ sudo apt-get install python3-lsbinit
+```
+### Installation (PIP)
+```sh
+# Python 2
+$ sudo pip install lsbinit
+# Python 3
+$ sudo pip3 install lsbinit 
 ```
 
 ### Basic Usage
