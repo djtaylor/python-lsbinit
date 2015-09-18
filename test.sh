@@ -124,7 +124,7 @@ do_py2() {
     echo -e "---------------------------------------------------------------"
     echo -e "Running Python2 tests..."
     echo -e "---------------------------------------------------------------"
-    do_setup "tests/init.py3.py"
+    do_setup "tests/lsbinit.py2.py"
     do_tests
     do_cleanup
     echo -e "---------------------------------------------------------------"
@@ -136,7 +136,7 @@ do_py2() {
 do_py3() {
     echo -e "Running Python3 tests..."
     echo -e "---------------------------------------------------------------"
-    do_setup "tests/init.py2.py"
+    do_setup "tests/lsbinit.py3.py"
     do_tests
     do_cleanup
     echo -e "---------------------------------------------------------------"
