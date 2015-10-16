@@ -1,5 +1,6 @@
 from __future__ import print_function
-from sys import argv, exit
+import traceback
+from sys import argv, exit, exc_info
 from subprocess import Popen
 from os import kill, devnull, makedirs, setpgrp, environ
 from os.path import dirname, isdir
@@ -87,7 +88,7 @@ class LSBInit(_LSBCommon):
         Set the output for the service command.
         """
         if not self.output:
-            return devnull
+            return open(devnull, 'w')
         
         # Get the output file path
         output_dir = dirname(self.output)
@@ -124,6 +125,9 @@ class LSBInit(_LSBCommon):
                 
             # Failed to start process
             except Exception as e:
+                print('--- DEBUG ---')
+                exc_type, exc_value, exc_tb = exc_info()
+                traceback.print_exception(exc_type, exc_value, exc_tb)
                 self.die('Failed to start service: {}'.format(str(e)))
              
         # Service already running   
