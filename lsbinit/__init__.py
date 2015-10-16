@@ -11,7 +11,7 @@ from .pid import _LSBPIDHandler
 from .lock import _LSBLockHandler
 
 # Module version
-__version__ = '0.1-5'
+__version__ = '0.1-6'
 
 # Unicode characters
 UNICODE = {
