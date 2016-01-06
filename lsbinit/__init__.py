@@ -41,12 +41,17 @@ class LSBInit(_LSBCommon):
         
         # Service command / executable / environment / shell
         self.command   = argv[1]
-        self.exe       = exe
+        self.exe       = self._set_command(exe)
         self.env       = env
         self.shell     = shell
 
         # Command output
         self.output    = output
+
+    def _set_command(self, cmd):
+        if isinstance(cmd, str):
+            return cmd.split(' ')
+        return cmd
 
     def _colorize(self, msg, color=None, encode=False):
         """
@@ -107,7 +112,7 @@ class LSBInit(_LSBCommon):
                 output = self.set_output()
         
                 # Generate the run command
-                command = ['nohup', self.exe] if isinstance(self.exe, str) else ['nohup'] + self.exe
+                command = ['nohup'] + self.exe
             
                 # Start the process
                 proc = Popen(command,  
